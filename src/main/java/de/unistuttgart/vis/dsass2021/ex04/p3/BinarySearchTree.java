@@ -1,6 +1,8 @@
 package de.unistuttgart.vis.dsass2021.ex04.p3;
 
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.Stack;
 
 public class BinarySearchTree<T extends Comparable<T>> implements IBinarySearchTreeIterable<T> {
@@ -42,24 +44,28 @@ public class BinarySearchTree<T extends Comparable<T>> implements IBinarySearchT
 		case PREORDER:
 			return new PreorderIterator<T>();
 		case POSTORDER:
-			return new PostorderIterator;
+			return new PostorderIterator<T>();
 		case INORDER:
-			return new InorderIterator;
+			return new InorderIterator<T>();
 		case LEVELORDER:
-			return new LevelorderIterator;
+			return new LevelorderIterator<T>();
 		default:
 			break;
 		}
 		return null;
 	}
 
+	/*
+	 * The Preorder traversal iterator iterates through the tree in three steps: 1.
+	 * Visit the root. 2. Traverse the left subtree. 3. Traverse the right subtree.
+	 */
 	class PreorderIterator<T extends Comparable<T>> implements java.util.Iterator<T> {
 
 		Stack<IBinaryTreeNode<T>> stack = new Stack<>();
 
 		public PreorderIterator() {
 			if (root.getRightChild() != null) {
-				stack.push((IBinaryTreeNode<T>) root.getRightChild());
+				stack.push((IBinaryTreeNode<T>) root);
 			}
 		}
 
@@ -83,25 +89,40 @@ public class BinarySearchTree<T extends Comparable<T>> implements IBinarySearchT
 
 	}
 
+	/*
+	 * The Postorder traversal iterator iterates through the tree in three steps: 1.
+	 * Traverse the left subtree. 2. Traverse the right subtree. 3. Visit the root.
+	 */
 	class PostorderIterator<T extends Comparable<T>> implements java.util.Iterator<T> {
 
-		Stack<IBinaryTreeNode<T>> stack = new Stack<>();
-		IBinaryTreeNode<T> temp = (IBinaryTreeNode<T>) root;
+		Stack<IBinaryTreeNode<T>> stackTemporary = new Stack<>();
+		Stack<IBinaryTreeNode<T>> stackOut = new Stack<>();
+		IBinaryTreeNode<T> temp;
 
+		/*
+		 * The Postorder iterator uses a stackTemporary stack and a stackOut stack. At
+		 * the start the root is pushed to the stackTemporary. In every step the top
+		 * element of the stackTemporary gets popped and is pushed on stackOut. After
+		 * that the left and right child of the top stackOut-element, if its available,
+		 * is pushed on stackTemporary. This continues until stackTemporary is empty.
+		 */
 		public PostorderIterator() {
-			while (temp.getLeftChild() != null || temp.getRightChild() != null) {
-				stack.push(temp);
+			stackTemporary.push((IBinaryTreeNode<T>) root);
+			while (!stackTemporary.isEmpty()) {
+				temp = stackTemporary.pop();
+				stackOut.push(temp);
 				if (temp.getLeftChild() != null) {
-					temp = temp.getLeftChild();
-				} else {
-					temp = temp.getRightChild();
+					stackTemporary.push((IBinaryTreeNode<T>) temp.getLeftChild());
+				}
+				if (temp.getRightChild() != null) {
+					stackTemporary.push((IBinaryTreeNode<T>) temp.getRightChild());
 				}
 			}
 		}
 
 		@Override
 		public boolean hasNext() {
-			if (stack.isEmpty()) {
+			if (stackOut.isEmpty()) {
 				return false;
 			}
 			return true;
@@ -109,34 +130,23 @@ public class BinarySearchTree<T extends Comparable<T>> implements IBinarySearchT
 
 		@Override
 		public T next() {
-			IBinaryTreeNode<T> temp2 = stack.pop();
-			if (stack.peek().getRightChild() == temp2) {
-				return stack.pop().getValue();
-			}else if (stack.peek().getRightChild() != null){
-				stack.push(stack.peek().getRightChild());
-				while (temp2.getLeftChild() != null || temp2.getRightChild() != null) {
-					if (temp2.getLeftChild() != null) {
-						temp2 = temp2.getLeftChild();
-					} else {
-						temp2 = temp2.getRightChild();
-					}
-					stack.push(temp2);
-				}
-				stack.pop().getValue();
-			}
-			return stack.pop().getValue();
+			return stackOut.pop().getValue();
 		}
 
 	}
 
+	/*
+	 * The Inorder traversal iterator iterates through the tree in three steps: 
+	 * 1. Traverse the left subtree. 
+	 * 2. Visit the root. 
+	 * 3. Traverse the right subtree.
+	 */
 	class InorderIterator<T extends Comparable<T>> implements java.util.Iterator<T> {
 
 		Stack<IBinaryTreeNode<T>> stack = new Stack<>();
+		IBinaryTreeNode<T> temp = (IBinaryTreeNode<T>) root;
 
 		public InorderIterator() {
-			if (root.getRightChild() != null) {
-				stack.push((IBinaryTreeNode<T>) root.getRightChild());
-			}
 		}
 
 		@Override
@@ -146,43 +156,50 @@ public class BinarySearchTree<T extends Comparable<T>> implements IBinarySearchT
 
 		@Override
 		public T next() {
-			IBinaryTreeNode<T> temp = stack.pop();
-			T value = temp.getValue();
-			if (temp.getRightChild() != null) {
-				stack.push(temp.getRightChild());
+			while (!stack.isEmpty() || temp != null) {
+				if (temp != null) {
+					stack.push(temp);
+					temp = temp.getLeftChild();
+				} else {
+					temp = stack.peek();
+					IBinaryTreeNode<T> out = stack.pop();
+					temp = temp.getRightChild();
+					return out.getValue();
+				}
 			}
-			if (temp.getLeftChild() != null) {
-				stack.push(temp.getLeftChild());
-			}
-			return value;
+			return null;
 		}
 
 	}
 
+	/*
+	 * The Levelorder traversal iterator iterates through the tree level by level,
+	 * starting at the root-level.
+	 */
 	class LevelorderIterator<T extends Comparable<T>> implements java.util.Iterator<T> {
 
-		Stack<IBinaryTreeNode<T>> stack = new Stack<>();
+		Queue<IBinaryTreeNode<T>> queue = new LinkedList<>();
 
 		public LevelorderIterator() {
 			if (root.getRightChild() != null) {
-				stack.push((IBinaryTreeNode<T>) root.getRightChild());
+				queue.add((IBinaryTreeNode<T>) root);
 			}
 		}
 
 		@Override
 		public boolean hasNext() {
-			return !stack.isEmpty();
+			return !queue.isEmpty();
 		}
 
 		@Override
 		public T next() {
-			IBinaryTreeNode<T> temp = stack.pop();
+			IBinaryTreeNode<T> temp = queue.poll();
 			T value = temp.getValue();
-			if (temp.getRightChild() != null) {
-				stack.push(temp.getRightChild());
-			}
 			if (temp.getLeftChild() != null) {
-				stack.push(temp.getLeftChild());
+				queue.add(temp.getLeftChild());
+			}
+			if (temp.getRightChild() != null) {
+				queue.add(temp.getRightChild());
 			}
 			return value;
 		}

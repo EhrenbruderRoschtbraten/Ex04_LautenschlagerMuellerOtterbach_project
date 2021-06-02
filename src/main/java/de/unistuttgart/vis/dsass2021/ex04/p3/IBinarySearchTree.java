@@ -16,5 +16,5 @@ public interface IBinarySearchTree<T extends Comparable<T>> {
 	 * @return root node of the tree
 	 */
 	public IBinaryTreeNode<T> getRootNode();
-
+	
 }
